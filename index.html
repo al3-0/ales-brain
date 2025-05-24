@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ale's Brain</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%;
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+      user-select: none;
+    }
+    #start-screen {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      font-size: 2.5rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: color 0.3s ease;
+    }
+    #start-screen:hover {
+      color: violet;
+      text-shadow: 0 0 10px violet;
+    }
+
+    #main-content {
+      display: none;
+      position: relative;
+      min-height: 100vh;
+      background-color: black;
+      color: white;
+      overflow-x: hidden;
+      user-select: text;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Pioggia */
+    #rain-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 5; /* davanti allo sfondo ma dietro contenuti */
+    }
+
+    /* Titolo */
+    .title {
+      text-align: center;
+      font-size: 3rem;
+      color: violet;
+      text-shadow: 0 0 10px violet, 0 0 20px violet, 0 0 30px violet;
+      margin: 30px 0 20px;
+      animation: glitch 1s infinite;
+      position: relative;
+      z-index: 10;
+    }
+    @keyframes glitch {
+      0% { transform: translate(0); }
+      20% { transform: translate(-2px, 2px); }
+      40% { transform: translate(-2px, -2px); }
+      60% { transform: translate(2px, 2px); }
+      80% { transform: translate(2px, -2px); }
+      100% { transform: translate(0); }
+    }
+
+    /* Griglia profili */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 0 40px 60px 40px;
+      max-width: 1200px;
+      margin: 0 auto 60px;
+      position: relative;
+      z-index: 10;
+    }
+    .box {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: default;
+      user-select: text;
+    }
+    .box:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 10px 20px rgba(180, 0, 255, 0.7);
+      z-index: 20;
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    .box img {
+      max-width: 70%;
+      height: auto;
+      margin: 0 auto 15px;
+      border-radius: 15px;
+      user-select: none;
+      pointer-events: none;
+    }
+    .subtitle {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      color: #B007F9;
+      text-shadow: 0 0 6px #B007F9, 0 0 10px #B007F9;
+      user-select: text;
+      font-weight: bold;
+    }
+    .description {
+      font-size: 1rem;
+      color: #ddd;
+      text-shadow: 0 0 5px rgba(0,0,0,0.7);
+      word-wrap: break-word;
+      text-align: left;
+      user-select: text;
+    }
+    footer {
+      background-color: #000;
+      color: #fff;
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto 60px;
+      position: relative;
+      z-index: 10;
+      user-select: text;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="start-screen">Clicca qui!</div>
+
+  <div id="main-content">
+    <h1 class="title">Ale's Brain</h1>
+
+    <canvas id="rain-canvas"></canvas>
+
+    <div class="grid" id="profile-grid"></div>
+
+    <footer>
+      <p>
+        Voglio bene a tutti. Vi ho messo qui perché per me siete importanti, e non avrei mai pensato di trovare persone
+        come voi che mi supportavano. Mi sono sempre sentito escluso, ma voi mi avete fatto capire che ognuno è fatto
+        a modo suo e che ci sono persone con cui puoi fare amicizia anche se non hai una grande capacità di socializzare.
+        Qui ho messo solo i miei migliori amici e le persone che sono state o sono tutt'ora nei miei pensieri giornalieri.
+        Vi voglio bene ❤️
+      </p>
+    </footer>
+  </div>
+
+  <audio id="bg-music" loop preload="auto" src="https://cdn.glitch.global/e02829dd-d6ee-4f80-9fec-c730f796c6a7/Musica?v=1744497387716"></audio>
+
+  <script>
+    const startScreen = document.getElementById('start-screen');
+    const mainContent = document.getElementById('main-content');
+    const profileGrid = document.getElementById('profile-grid');
+    const bgMusic = document.getElementById('bg-music');
+
+    const userIds = [
+      '1097611509376499834', // Chiaretta
+      '1321572046458589224', // Lala
+      '1190313142971011102', // Vernio
+      '432493664703348736',   // Ica
+      '888530062083780639'    // Pizza
+    ];
+
+    const profileDescriptions = {
+      '1097611509376499834':  'Chiaretta, una persona che ha conquistato subito la mia fiducia. Sfortunatamente ci siamo conosciuti da poco e non sono in grado di dire altro. 💜',
+      '1321572046458589224': 'Lala, una persona con cui ho giocato e ci siamo supportati a vicenda anche nei momenti più difficili. Ci siamo conosciuti in un server: aprì un ticket perché non riusciva a verificarsi e ho proceduto a verificarla. Da lì è partito tutto ed è una persona difficile da dimenticare.',
+      '1190313142971011102': 'Vernio, amico che conosco da anni grazie ad un gioco di Roblox che lui stesso ha creato. Mi ha dato tantissime opportunità di crescita e fiducia. Grazie Vernio per tutte le opportunità che mi hai dato 💛',
+      '432493664703348736': 'Ica, un amico che ho conosciuto grazie al server di Vernio. Mi ha fatto da vice per un periodo e successivamente è diventato mio superiore. Giocavamo insieme, ma sfortunatamente dopo un po\' ci siamo allontanati.',
+      '888530062083780639': 'Pizza! Una persona che ho conosciuto anni fa, proprio dove ho conosciuto anche Vernio. C\'è poco da dire: un amico con cui ho giocato spesso, quasi sempre un mio superiore, una persona veramente simpatica e professionale.'
+    };
+
+    async function fetchUserProfile(userId) {
+      try {
+        const response = await fetch(`https://discordlookup.mesalytic.moe/v1/user/${userId}`);
+        if (!response.ok) throw new Error('Errore nella risposta API');
+        const data = await response.json();
+
+        const box = document.createElement('div');
+        box.className = 'box';
+
+        const avatar = document.createElement('img');
+        const isAnimated = data.avatar?.is_animated || false;
+        const avatarId = data.avatar?.id || '';
+        if (avatarId) {
+          const ext = isAnimated ? 'gif' : 'png';
+          avatar.src = `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.${ext}?size=512`;
+        } else {
+          avatar.src = 'https://via.placeholder.com/128?text=No+Avatar';
+        }
+        avatar.alt = data.username || 'Username';
+        box.appendChild(avatar);
+
+        const subtitle = document.createElement('div');
+        subtitle.className = 'subtitle';
+        subtitle.textContent = data.username || 'Username non disponibile';
+        box.appendChild(subtitle);
+
+        const description = document.createElement('div');
+        description.className = 'description';
+        description.textContent = profileDescriptions[userId] || '';
+        box.appendChild(description);
+
+        profileGrid.appendChild(box);
+
+      } catch (error) {
+        console.error('Errore caricamento profilo', error);
+      }
+    }
+
+    startScreen.addEventListener('click', () => {
+      startScreen.style.display = 'none';
+      mainContent.style.display = 'block';
+      userIds.forEach(fetchUserProfile);
+      startRain();
+
+      // Avvia musica, gestendo eventuali blocchi autoplay con promesse
+      bgMusic.volume = 0.2;
+      const playPromise = bgMusic.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.log('Impossibile far partire musica automaticamente:', error);
+        });
+      }
+    });
+
+    // Pioggia con effetto scoppio
+    function startRain() {
+      const canvas = document.getElementById('rain-canvas');
+      const ctx = canvas.getContext('2d');
+
+      let width, height;
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      class Drop {
+        constructor() {
+          this.reset();
+        }
+        reset() {
+          this.x = Math.random() * width;
+          this.y = Math.random() * -height;
+          this.length = 10 + Math.random() * 20;
+          this.speed = 4 + Math.random() * 4;
+          this.radius = 1 + Math.random() * 1.5;
+          this.splashing = false;
+          this.splashRadius = 0;
+          this.maxSplashRadius = 12 + Math.random() * 8;
+        }
+        update() {
+          if (!this.splashing) {
+            this.y += this.speed;
+            if (this.y > height - this.length) {
+              this.splashing = true;
+              this.splashRadius = 0;
+            }
+          } else {
+            this.splashRadius += 1.5;
+            if (this.splashRadius >= this.maxSplashRadius) {
+              this.reset();
+            }
+          }
+        }
+        draw() {
+          if (!this.splashing) {
+            ctx.strokeStyle = 'rgba(180, 0, 255, 0.8)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.x, this.y + this.length);
+            ctx.stroke();
+          } else {
+            ctx.beginPath();
+            const alpha = 1 - this.splashRadius / this.maxSplashRadius;
+            ctx.strokeStyle = `rgba(180, 0, 255, ${alpha})`;
+            ctx.lineWidth = 2;
+            ctx.arc(this.x, height - this.length, this.splashRadius, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+      }
+
+      const drops = [];
+      const maxDrops = 80;
+      for(let i=0; i < maxDrops; i++) {
+        drops.push(new Drop());
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, width, height);
+        drops.forEach(drop => {
+          drop.update();
+          drop.draw();
+        });
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    }
+  </script>
+</body>
+</html>
