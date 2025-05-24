@@ -31,7 +31,6 @@
       color: violet;
       text-shadow: 0 0 10px violet;
     }
-
     #main-content {
       display: none;
       position: relative;
@@ -42,18 +41,14 @@
       user-select: text;
       font-family: Arial, sans-serif;
     }
-
-    /* Pioggia */
     #rain-canvas {
       position: fixed;
       top: 0; left: 0;
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      z-index: 5; /* davanti allo sfondo ma dietro contenuti */
+      z-index: 5;
     }
-
-    /* Titolo */
     .title {
       text-align: center;
       font-size: 3rem;
@@ -72,8 +67,6 @@
       80% { transform: translate(2px, -2px); }
       100% { transform: translate(0); }
     }
-
-    /* Griglia profili */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -149,11 +142,8 @@
 
   <div id="main-content">
     <h1 class="title">Ale's Brain</h1>
-
     <canvas id="rain-canvas"></canvas>
-
     <div class="grid" id="profile-grid"></div>
-
     <footer>
       <p>
         Voglio bene a tutti. Vi ho messo qui perché per me siete importanti, e non avrei mai pensato di trovare persone
@@ -165,7 +155,7 @@
     </footer>
   </div>
 
-  <audio id="bg-music" loop preload="auto" src="https://cdn.glitch.global/e02829dd-d6ee-4f80-9fec-c730f796c6a7/Musica?v=1744497387716"></audio>
+<audio id="bg-music" loop preload="auto" src="music.mp3"></audio>
 
   <script>
     const startScreen = document.getElementById('start-screen');
@@ -177,8 +167,8 @@
       '1097611509376499834', // Chiaretta
       '1321572046458589224', // Lala
       '1190313142971011102', // Vernio
-      '432493664703348736',   // Ica
-      '888530062083780639'    // Pizza
+      '432493664703348736', // Ica
+      '888530062083780639'  // Pizza
     ];
 
     const profileDescriptions = {
@@ -189,24 +179,45 @@
       '888530062083780639': 'Pizza! Una persona che ho conosciuto anni fa, proprio dove ho conosciuto anche Vernio. C\'è poco da dire: un amico con cui ho giocato spesso, quasi sempre un mio superiore, una persona veramente simpatica e professionale.'
     };
 
-    async function fetchUserProfile(userId) {
-      try {
-        const response = await fetch(`https://discordlookup.mesalytic.moe/v1/user/${userId}`);
-        if (!response.ok) throw new Error('Errore nella risposta API');
-        const data = await response.json();
+    startScreen.addEventListener('click', async () => {
+      startScreen.style.display = 'none';
+      mainContent.style.display = 'block';
+      await loadAllProfiles();
+      startRain();
 
+      bgMusic.volume = 0.2;
+      const playPromise = bgMusic.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.log('Impossibile far partire musica automaticamente:', error);
+        });
+      }
+    });
+
+    async function loadAllProfiles() {
+      const profiles = [];
+
+      for (const userId of userIds) {
+        try {
+          const response = await fetch(`https://discordlookup.mesalytic.moe/v1/user/${userId}`);
+          if (!response.ok) throw new Error('Errore nella risposta API');
+          const data = await response.json();
+          profiles.push({ userId, data });
+        } catch (error) {
+          console.error(`Errore nel caricamento profilo ${userId}`, error);
+        }
+      }
+
+      for (const { userId, data } of profiles) {
         const box = document.createElement('div');
         box.className = 'box';
 
         const avatar = document.createElement('img');
         const isAnimated = data.avatar?.is_animated || false;
         const avatarId = data.avatar?.id || '';
-        if (avatarId) {
-          const ext = isAnimated ? 'gif' : 'png';
-          avatar.src = `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.${ext}?size=512`;
-        } else {
-          avatar.src = 'https://via.placeholder.com/128?text=No+Avatar';
-        }
+        avatar.src = avatarId
+          ? `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.${isAnimated ? 'gif' : 'png'}?size=512`
+          : 'https://via.placeholder.com/128?text=No+Avatar';
         avatar.alt = data.username || 'Username';
         box.appendChild(avatar);
 
@@ -221,29 +232,9 @@
         box.appendChild(description);
 
         profileGrid.appendChild(box);
-
-      } catch (error) {
-        console.error('Errore caricamento profilo', error);
       }
     }
 
-    startScreen.addEventListener('click', () => {
-      startScreen.style.display = 'none';
-      mainContent.style.display = 'block';
-      userIds.forEach(fetchUserProfile);
-      startRain();
-
-      // Avvia musica, gestendo eventuali blocchi autoplay con promesse
-      bgMusic.volume = 0.2;
-      const playPromise = bgMusic.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.log('Impossibile far partire musica automaticamente:', error);
-        });
-      }
-    });
-
-    // Pioggia con effetto scoppio
     function startRain() {
       const canvas = document.getElementById('rain-canvas');
       const ctx = canvas.getContext('2d');
@@ -259,9 +250,7 @@
       resize();
 
       class Drop {
-        constructor() {
-          this.reset();
-        }
+        constructor() { this.reset(); }
         reset() {
           this.x = Math.random() * width;
           this.y = Math.random() * -height;
@@ -281,9 +270,7 @@
             }
           } else {
             this.splashRadius += 1.5;
-            if (this.splashRadius >= this.maxSplashRadius) {
-              this.reset();
-            }
+            if (this.splashRadius >= this.maxSplashRadius) this.reset();
           }
         }
         draw() {
@@ -305,12 +292,7 @@
         }
       }
 
-      const drops = [];
-      const maxDrops = 80;
-      for(let i=0; i < maxDrops; i++) {
-        drops.push(new Drop());
-      }
-
+      const drops = Array.from({ length: 80 }, () => new Drop());
       function animate() {
         ctx.clearRect(0, 0, width, height);
         drops.forEach(drop => {
