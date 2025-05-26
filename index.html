@@ -4,7 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ale's Brain</title>
-  <link rel="icon" type="image/webp" href="logo.webp" />
+<script>
+  // Aggiorna dinamicamente il logo del sito (favicon) con l'immagine profilo di un utente Discord
+  (async function updateFaviconWithDiscordAvatar() {
+    const userId = '939521008203882536';
+    try {
+      const response = await fetch(`https://discordlookup.mesalytic.moe/v1/user/${userId}`);
+      if (!response.ok) throw new Error('Errore nella risposta API');
+      const data = await response.json();
+      const isAnimated = data.avatar?.is_animated || false;
+      const avatarId = data.avatar?.id;
+      if (!avatarId) return;
+
+      const avatarUrl = `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.${isAnimated ? 'gif' : 'png'}?size=64`;
+
+      const faviconLink = document.createElement('link');
+      faviconLink.rel = 'icon';
+      faviconLink.type = `image/${isAnimated ? 'gif' : 'png'}`;
+      faviconLink.href = avatarUrl;
+
+      // Rimuove eventuale favicon esistente
+      const oldFavicon = document.querySelector("link[rel='icon']");
+      if (oldFavicon) document.head.removeChild(oldFavicon);
+      
+      document.head.appendChild(faviconLink);
+    } catch (error) {
+      console.error("Impossibile caricare l'avatar del logo:", error);
+    }
+  })();
+</script>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -155,7 +183,7 @@
     </footer>
   </div>
 
-<audio id="bg-music" loop preload="auto" src="Musica.mp3"></audio>
+  <audio id="bg-music" loop preload="auto" src="https://cdn.glitch.global/e02829dd-d6ee-4f80-9fec-c730f796c6a7/Musica?v=1744497387716"></audio>
 
   <script>
     const startScreen = document.getElementById('start-screen');
@@ -173,7 +201,7 @@
 
     const profileDescriptions = {
       '1097611509376499834':  'Chiaretta, una persona che ha conquistato subito la mia fiducia. Sfortunatamente ci siamo conosciuti da poco e non sono in grado di dire altro. 💜',
-      '1321572046458589224': 'Lala, una persona con cui ho giocato e ci siamo supportati a vicenda anche nei momenti più difficili. Ci siamo conosciuti in un server: aprì un ticket perché non riusciva a verificarsi e ho proceduto a verificarla. Da lì è partito tutto ed è una persona difficile da dimenticare.',
+      '1321572046458589224': 'Lala, una persona con cui ho giocato e ci siamo supportati a vicenda anche nei momenti più difficili. Ci siamo conosciuti in un server: aprì un ticket perché non riusciva a verificarsi e ho proceduto a verificarla. Da lì è partito tutto ed è una persona difficile da dimenticare. Sfortunatamente abbiamo litigato e ci siamo persi.',
       '1190313142971011102': 'Vernio, amico che conosco da anni grazie ad un gioco di Roblox che lui stesso ha creato. Mi ha dato tantissime opportunità di crescita e fiducia. Grazie Vernio per tutte le opportunità che mi hai dato 💛',
       '432493664703348736': 'Ica, un amico che ho conosciuto grazie al server di Vernio. Mi ha fatto da vice per un periodo e successivamente è diventato mio superiore. Giocavamo insieme, ma sfortunatamente dopo un po\' ci siamo allontanati.',
       '888530062083780639': 'Pizza! Una persona che ho conosciuto anni fa, proprio dove ho conosciuto anche Vernio. C\'è poco da dire: un amico con cui ho giocato spesso, quasi sempre un mio superiore, una persona veramente simpatica e professionale.'
